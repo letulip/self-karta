@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { AUTHOR, buildPrompt, GOALS, NEXT_STEPS, TASKS, TIERS, type TaskId } from '../content/texts.ru';
+import { AUTHOR, buildPrompt, COACH, coachMessage, GOALS, NEXT_STEPS, TASKS, TIERS, type TaskId } from '../content/texts.ru';
 import CopyButton from '../components/CopyButton.vue';
 import ProgressBar from '../components/ProgressBar.vue';
 import { groupProgress } from '../lib/answers';
@@ -128,11 +128,25 @@ const share = () => shareText(md.value, fileName.value, 'text/markdown');
       <ul class="tips">
         <li v-for="t in NEXT_STEPS.tips" :key="t">{{ t }}</li>
       </ul>
-      <div class="card soft">
-        {{ NEXT_STEPS.author }} {{ AUTHOR.name }}:
-        <a :href="`https://t.me/${AUTHOR.telegram}`" target="_blank" rel="noopener noreferrer">Telegram @{{ AUTHOR.telegram }}</a>
-        или <a :href="`mailto:${AUTHOR.email}`">{{ AUTHOR.email }}</a>.
+    </section>
+
+    <section class="card coach stack" aria-labelledby="coach-h">
+      <h2 id="coach-h">4. {{ COACH.title }}</h2>
+      <p v-for="p in COACH.paragraphs" :key="p">{{ p }}</p>
+      <figure v-for="q in COACH.quotes" :key="q.text" class="quote">
+        <blockquote>{{ q.text }}</blockquote>
+        <figcaption>— {{ q.who }}</figcaption>
+      </figure>
+      <p class="muted">{{ COACH.privacy }}</p>
+      <div class="row">
+        <a class="btn primary" :href="`https://t.me/${AUTHOR.telegram}`" target="_blank" rel="noopener noreferrer">
+          {{ COACH.telegramLabel }}
+        </a>
+        <CopyButton :text="() => coachMessage(TIERS[tier].name, goalLabels(state))" label="Скопировать сообщение" />
       </div>
+      <p class="muted small">
+        Или на почту: <a :href="`mailto:${AUTHOR.email}`">{{ AUTHOR.email }}</a>
+      </p>
     </section>
 
     <section class="card soft stack">
@@ -149,4 +163,8 @@ const share = () => shareText(md.value, fileName.value, 'text/markdown');
 .small { font-size: 0.92rem; margin-top: 6px; }
 textarea[readonly] { font-size: 0.9rem; background: var(--surface-2); }
 .tips { color: var(--muted); font-size: 0.95rem; }
+.coach { border: 2px solid var(--accent); }
+.quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0; }
+.quote blockquote { margin: 0; font-style: italic; }
+.quote figcaption { margin-top: 4px; font-size: 0.85rem; color: var(--muted); }
 </style>

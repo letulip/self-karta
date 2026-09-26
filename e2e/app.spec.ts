@@ -166,3 +166,15 @@ test('цели: до трёх, маршрут следует за ними, вы
   await expect(page.getByTestId('task-select')).toHaveValue('job');
   await expect(page.getByTestId('prompt')).toHaveValue(/Зачем мне разбор: просто интересно; найти работу/);
 });
+
+test('карточка коуча: Telegram, отзывы и готовое сообщение с маршрутом и целями', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await onboard(page);
+  await page.goto('./#/export');
+  const card = page.getByRole('region', { name: /Разобрать вместе с коучем/ });
+  await expect(card.getByRole('link', { name: 'Написать в Telegram' })).toHaveAttribute('href', 'https://t.me/letulip');
+  await expect(card.locator('blockquote')).toHaveCount(2);
+  await card.getByRole('button', { name: 'Скопировать сообщение' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/Маршрут: «Эскиз»\. Цели: найти работу/);
+  await expect(page.getByTestId('prompt')).not.toHaveValue(/letulip/);
+});

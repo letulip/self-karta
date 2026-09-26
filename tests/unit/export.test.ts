@@ -50,8 +50,9 @@ describe('выгрузка в Markdown', () => {
     expect(md).not.toContain('#### C2.');
   });
 
-  it('Big Five — ссылкой в конце', () => {
-    expect(md.trimEnd().endsWith('Результат: https://psytests.org/result?v=abc')).toBe(true);
+  it('Big Five — ссылкой в конце, после неё — подпись автора', () => {
+    expect(md).toMatch(/Результат: https:\/\/psytests\.org\/result\?v=abc\n\n---\n\nТест собрал Игорь/);
+    expect(md.trimEnd().endsWith('почта ivladimirskiy@ya.ru.')).toBe(true);
   });
 
   it('можно скрыть вопросы без ответа', () => {
@@ -76,6 +77,9 @@ describe('промпты разбора', () => {
       expect(p).toContain('Маршрут «Карта», отвечено 90 из 100');
       expect(p).toContain('Не ставь диагнозов');
       expect(p).toContain('«Оставляю для разбора:»');
+      // Ассистент не должен рекламировать автора: контакты живут в интерфейсе и подписи файла.
+      expect(p).not.toMatch(/letulip|ivladimirskiy|Игорь/);
+      expect(p).toContain('с живым человеком: коучем, ментором или близким');
       expect(p).not.toMatch(/\n\n\n/);
     }
   });

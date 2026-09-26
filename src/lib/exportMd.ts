@@ -1,6 +1,6 @@
 // Сборка единого Markdown-документа с вопросами и ответами — для разбора в ИИ-ассистенте или с человеком.
 import { parts } from '../content/questions.ru';
-import { GOALS, READING_GUIDE, TIERS, APP_TITLE } from '../content/texts.ru';
+import { APP_TITLE, FILE_SIGNATURE, GOALS, READING_GUIDE, TIERS } from '../content/texts.ru';
 import type { Question, Tier } from '../content/types';
 import { groupsOf, questionsOf, tierQuestions } from './content';
 import {
@@ -131,6 +131,7 @@ export function buildMarkdown(state: KartaState, opts: { hideEmpty?: boolean; no
     if (bf.resultUrl.trim()) out.push(`Результат: ${bf.resultUrl.trim()}`, '');
     if (bf.notes.trim()) out.push(bf.notes.trim(), '');
   }
+  out.push('---', '', FILE_SIGNATURE, '');
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
 }
 
