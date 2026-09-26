@@ -3,6 +3,7 @@ import { computed, nextTick } from 'vue';
 import type { Question } from '../content/types';
 import { plural } from '../lib/format';
 import { uid, type ListRow, type ListValue } from '../lib/model';
+import AutoTextarea from './AutoTextarea.vue';
 
 const props = defineProps<{ question: Question }>();
 const model = defineModel<ListValue>({ required: true });
@@ -23,8 +24,14 @@ const TRI = [
 ];
 
 function commit(next: ListRow[]) {
-  model.value = { rows: next };
+  model.value = { ...model.value, rows: next };
 }
+
+// Не всё укладывается в строки: комментарий сохраняет мысль целиком.
+const comment = computed({
+  get: () => model.value.comment ?? '',
+  set: (v: string) => (model.value = { ...model.value, comment: v }),
+});
 
 function setCell(row: ListRow, key: string, value: string) {
   if (row.id === DRAFT) return commit([{ id: uid(), cells: { [key]: value } }]);
@@ -111,6 +118,10 @@ function onPaste(e: ClipboardEvent, row: ListRow, key: string) {
         >
       </small>
     </div>
+    <div class="comment">
+      <label :for="`comment-${question.id}`">Комментарий <span class="muted">(по желанию)</span></label>
+      <AutoTextarea :id="`comment-${question.id}`" v-model="comment" :rows="2" />
+    </div>
   </div>
 </template>
 
@@ -124,4 +135,6 @@ function onPaste(e: ClipboardEvent, row: ListRow, key: string) {
 .tri .btn.on { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
 .t-label { font-weight: 400; font-size: 0.8rem; }
 .remove { font-size: 1.3rem; line-height: 1; padding-top: 10px; }
+.comment { margin-top: 14px; }
+.comment label { font-weight: 500; }
 </style>

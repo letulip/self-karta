@@ -47,6 +47,10 @@ const foreign = computed(() => !!url.value.trim() && parsed.value?.hostname !== 
     <a :href="BIG_FIVE.runUrl" target="_blank" rel="noopener noreferrer" class="btn primary">Пройти тест на psytests.org</a>
     <section class="card stack">
       <div>
+        <label for="bf-notes">{{ BIG_FIVE.fields.notes }}</label>
+        <AutoTextarea id="bf-notes" v-model="notes" :rows="6" placeholder="Экстраверсия (E) … Доброжелательность (A) …" />
+      </div>
+      <div>
         <label for="bf-url">{{ BIG_FIVE.fields.resultUrl }}</label>
         <input id="bf-url" v-model="url" type="url" inputmode="url" placeholder="https://psytests.org/result?v=…" />
         <p v-if="withBlank" class="warn" role="alert">
@@ -54,10 +58,6 @@ const foreign = computed(() => !!url.value.trim() && parsed.value?.hostname !== 
           результат без бланка.
         </p>
         <p v-else-if="foreign" class="warn" role="alert">Это не ссылка psytests.org — проверь, что скопирован нужный адрес.</p>
-      </div>
-      <div>
-        <label for="bf-notes">{{ BIG_FIVE.fields.notes }}</label>
-        <AutoTextarea id="bf-notes" v-model="notes" :rows="4" />
       </div>
     </section>
   </main>

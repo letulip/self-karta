@@ -4,6 +4,7 @@ import type { Question } from '../content/types';
 import { questionById } from '../lib/content';
 import type { ListValue, RateValue } from '../lib/model';
 import { state } from '../lib/store';
+import AutoTextarea from './AutoTextarea.vue';
 
 const props = defineProps<{ question: Question }>();
 const model = defineModel<RateValue>({ required: true });
@@ -20,38 +21,49 @@ const hi = computed(() => props.question.scale?.highlightFrom ?? Infinity);
 const teachCount = computed(() => rows.value.filter((r) => (model.value.scores[r.id] ?? 0) >= hi.value).length);
 
 function setScore(id: string, n: number) {
-  model.value = { scores: { ...model.value.scores, [id]: n } };
+  model.value = { ...model.value, scores: { ...model.value.scores, [id]: n } };
 }
+
+const comment = computed({
+  get: () => model.value.comment ?? '',
+  set: (v: string) => (model.value = { ...model.value, comment: v }),
+});
 </script>
 
 <template>
-  <div v-if="!rows.length" class="card warn">
-    Сначала выпиши навыки в вопросе {{ source?.id }} — здесь появится список для оценки.
-    <RouterLink v-if="source" :to="`/g/${source.group}/q/${source.id}`">Перейти к {{ source.id }}</RouterLink>
-  </div>
-  <div v-else class="rate">
-    <p class="muted small">
-      {{ min }} — только начинаю, {{ max }} — эксперт. {{ hi }}+ значит «{{ question.scale?.highlightLabel }}».
-      Сейчас таких: {{ teachCount }}.
-    </p>
-    <div v-for="r in rows" :key="r.id" class="rate-row">
-      <div class="name">
-        {{ r.cells.item }}
-        <span v-if="(model.scores[r.id] ?? 0) >= hi" class="tag accent">{{ question.scale?.highlightLabel }}</span>
+  <div>
+    <div v-if="!rows.length" class="card warn">
+      Сначала выпиши навыки в вопросе {{ source?.id }} — здесь появится список для оценки.
+      <RouterLink v-if="source" :to="`/g/${source.group}/q/${source.id}`">Перейти к {{ source.id }}</RouterLink>
+    </div>
+    <div v-else class="rate">
+      <p class="muted small">
+        {{ min }} — только начинаю, {{ max }} — эксперт. {{ hi }}+ значит «{{ question.scale?.highlightLabel }}».
+        Сейчас таких: {{ teachCount }}.
+      </p>
+      <div v-for="r in rows" :key="r.id" class="rate-row">
+        <div class="name">
+          {{ r.cells.item }}
+          <span v-if="(model.scores[r.id] ?? 0) >= hi" class="tag accent">{{ question.scale?.highlightLabel }}</span>
+        </div>
+        <div class="scale" role="radiogroup" :aria-label="`Оценка: ${r.cells.item}`">
+          <button
+            v-for="n in points"
+            :key="n"
+            type="button"
+            role="radio"
+            :aria-checked="model.scores[r.id] === n"
+            :class="{ on: model.scores[r.id] === n, hi: n >= hi }"
+            @click="setScore(r.id, n)"
+          >
+            {{ n }}
+          </button>
+        </div>
       </div>
-      <div class="scale" role="radiogroup" :aria-label="`Оценка: ${r.cells.item}`">
-        <button
-          v-for="n in points"
-          :key="n"
-          type="button"
-          role="radio"
-          :aria-checked="model.scores[r.id] === n"
-          :class="{ on: model.scores[r.id] === n, hi: n >= hi }"
-          @click="setScore(r.id, n)"
-        >
-          {{ n }}
-        </button>
-      </div>
+    </div>
+    <div class="comment">
+      <label :for="`comment-${question.id}`">Комментарий <span class="muted">(по желанию: можно и словами вместо цифр)</span></label>
+      <AutoTextarea :id="`comment-${question.id}`" v-model="comment" :rows="2" />
     </div>
   </div>
 </template>
@@ -73,5 +85,7 @@ function setScore(id: string, n: number) {
   padding: 0;
 }
 .scale button.hi { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.comment { margin-top: 14px; }
+.comment label { font-weight: 500; }
 .scale button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 700; }
 </style>

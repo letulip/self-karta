@@ -29,6 +29,9 @@ export function answeredCount(state: KartaState, tier: Tier): number {
   return tierQuestions(tier).filter((q) => isAnswered(q, state.answers[q.id])).length;
 }
 
+const withComment = (body: string, comment?: string) =>
+  [body, comment?.trim() ? `Комментарий: ${comment.trim()}` : ''].filter(Boolean).join('\n\n');
+
 function renderAnswer(q: Question, state: KartaState): string {
   const v = state.answers[q.id]?.value;
   switch (q.kind) {
@@ -36,12 +39,13 @@ function renderAnswer(q: Question, state: KartaState): string {
       return (v as string).trim();
     case 'list': {
       const cols = q.columns ?? [];
-      const rows = (v as ListValue).rows.filter((r) => Object.values(r.cells).some((c) => c.trim()));
+      const list = v as ListValue;
+      const rows = list.rows.filter((r) => Object.values(r.cells).some((c) => c.trim()));
       const head = `| ${cols.map((c) => c.label).join(' | ')} |\n| ${cols.map(() => '---').join(' | ')} |`;
       const body = rows.map(
         (r) => `| ${cols.map((c) => cell(c.type === 'tri' ? (TRI[r.cells[c.key] ?? ''] ?? '') : (r.cells[c.key] ?? ''))).join(' | ')} |`,
       );
-      return [head, ...body].join('\n');
+      return withComment(rows.length ? [head, ...body].join('\n') : '', list.comment);
     }
     case 'rate': {
       const scores = (v as RateValue).scores;
@@ -55,7 +59,8 @@ function renderAnswer(q: Question, state: KartaState): string {
           const mark = s !== undefined && s >= hi ? ` (${q.scale?.highlightLabel})` : '';
           return `| ${cell(r.cells.item ?? '')} | ${s ?? '—'}${mark} |`;
         });
-      return ['| Навык | Уровень 1–10 |', '| --- | --- |', ...lines].join('\n');
+      const table = lines.length && Object.keys(scores).length ? ['| Навык | Уровень 1–10 |', '| --- | --- |', ...lines].join('\n') : '';
+      return withComment(table, (v as RateValue).comment);
     }
     case 'rank': {
       const r = v as RankValue;
@@ -128,8 +133,8 @@ export function buildMarkdown(state: KartaState, opts: { hideEmpty?: boolean; no
   const bf = state.bigFive;
   if (bf.resultUrl.trim() || bf.notes.trim()) {
     out.push('## Big Five (IPIP-NEO-120)', '');
-    if (bf.resultUrl.trim()) out.push(`Результат: ${bf.resultUrl.trim()}`, '');
     if (bf.notes.trim()) out.push(bf.notes.trim(), '');
+    if (bf.resultUrl.trim()) out.push(`Ссылка на результат: ${bf.resultUrl.trim()}`, '');
   }
   out.push('---', '', FILE_SIGNATURE, '');
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';

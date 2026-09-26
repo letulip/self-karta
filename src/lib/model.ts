@@ -4,8 +4,8 @@ import type { GoalId } from '../content/texts.ru';
 export const SCHEMA = 1;
 
 export interface ListRow { id: string; cells: Record<string, string> }
-export interface ListValue { rows: ListRow[] }
-export interface RateValue { scores: Record<string, number> } // id строки списка → оценка
+export interface ListValue { rows: ListRow[]; comment?: string }
+export interface RateValue { scores: Record<string, number>; comment?: string } // id строки списка → оценка
 export interface RankValue { orders: Record<string, string[]>; custom: string[]; followUp: string }
 export interface FieldsValue { values: Record<string, string> }
 export interface MirrorEntry { id: string; who: string; strengths: string; weakness: string }
@@ -62,9 +62,9 @@ export function isAnswered(q: Question, rec: AnswerRecord | undefined): boolean 
     case 'text':
       return typeof v === 'string' && filled(v);
     case 'list':
-      return (v as ListValue).rows?.some((r) => Object.values(r.cells).some(filled)) ?? false;
+      return (v as ListValue).rows?.some((r) => Object.values(r.cells).some(filled)) || filled((v as ListValue).comment);
     case 'rate':
-      return Object.keys((v as RateValue).scores ?? {}).length > 0;
+      return Object.keys((v as RateValue).scores ?? {}).length > 0 || filled((v as RateValue).comment);
     case 'rank': {
       const r = v as RankValue;
       return Object.values(r.orders ?? {}).some((o) => o.length > 0) || filled(r.followUp);

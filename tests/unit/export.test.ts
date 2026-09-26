@@ -51,8 +51,18 @@ describe('выгрузка в Markdown', () => {
   });
 
   it('Big Five — ссылкой в конце, после неё — подпись автора', () => {
-    expect(md).toMatch(/Результат: https:\/\/psytests\.org\/result\?v=abc\n\n---\n\nТест собрал Игорь/);
+    expect(md).toMatch(/Ссылка на результат: https:\/\/psytests\.org\/result\?v=abc\n\n---\n\nТест собрал Игорь/);
     expect(md.trimEnd().endsWith('почта ivladimirskiy@ya.ru.')).toBe(true);
+  });
+
+  it('комментарий к списку и оценке выводится; ответ одним комментарием засчитывается', () => {
+    const s = fixture();
+    s.answers.C11 = { value: { rows: [{ id: 'a', cells: { item: 'Vue' } }], comment: 'всё из LinkedIn' }, updatedAt: 1 };
+    s.answers.C12 = { value: { scores: {}, comment: 'по веб-разработке мне будет что сказать' }, updatedAt: 1 };
+    const out = buildMarkdown(s);
+    expect(out).toContain('| Vue |\n\nКомментарий: всё из LinkedIn');
+    expect(out).toMatch(/#### C12\.[^\n]+\n(> [^\n]+\n)+\nКомментарий: по веб-разработке/);
+    expect(answeredCount(s, 1)).toBe(7);
   });
 
   it('можно скрыть вопросы без ответа', () => {
@@ -77,6 +87,7 @@ describe('промпты разбора', () => {
       expect(p).toContain('Маршрут «Карта», отвечено 90 из 100');
       expect(p).toContain('Не ставь диагнозов');
       expect(p).toContain('«Оставляю для разбора:»');
+      expect(p).toContain('вопросы, которые я задаю тебе прямо в ответах');
       // Ассистент не должен рекламировать автора: контакты живут в интерфейсе и подписи файла.
       expect(p).not.toMatch(/letulip|ivladimirskiy|Игорь/);
       expect(p).toContain('с живым человеком: коучем, ментором или близким');

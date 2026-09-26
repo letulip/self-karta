@@ -157,7 +157,7 @@ function confirmReset() {
       <h2>{{ BIG_FIVE.title }}</h2>
       <p>{{ BIG_FIVE.text }}</p>
       <RouterLink to="/big5" class="btn small">
-        {{ state.bigFive.resultUrl.trim() ? 'Ссылка на результат добавлена ✓' : 'Как пройти и приложить результат' }}
+        {{ state.bigFive.notes.trim() || state.bigFive.resultUrl.trim() ? 'Результаты добавлены ✓' : 'Как пройти и приложить результат' }}
       </RouterLink>
     </section>
 

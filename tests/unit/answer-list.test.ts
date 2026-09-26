@@ -16,6 +16,7 @@ describe('список навыков', () => {
   it('пустой список ничего не пишет в ответ, пока не начали вводить', () => {
     const w = mount(AnswerList, { props: { question: C11, modelValue: { rows: [] } } });
     expect(w.findAll('input')).toHaveLength(1);
+    expect(w.find('textarea').exists()).toBe(true);
     expect(w.emitted('update:modelValue')).toBeUndefined();
   });
 
@@ -24,6 +25,14 @@ describe('список навыков', () => {
     paste(w.find('input').element, '- Vue\n- TypeScript\n3) Playwright\n\n');
     const [[value]] = w.emitted('update:modelValue') as [[ListValue]];
     expect(value.rows.map((r) => r.cells.item)).toEqual(['Vue', 'TypeScript', 'Playwright']);
+  });
+
+  it('вставка не стирает комментарий', () => {
+    const w = mount(AnswerList, { props: { question: C11, modelValue: { rows: [], comment: 'всё из LinkedIn' } } });
+    paste(w.find('input').element, 'Vue\nSQL');
+    const [[value]] = w.emitted('update:modelValue') as [[ListValue]];
+    expect(value.comment).toBe('всё из LinkedIn');
+    expect(value.rows).toHaveLength(2);
   });
 
   it('строка через запятые тоже становится списком', () => {
