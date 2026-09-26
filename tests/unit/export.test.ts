@@ -98,5 +98,10 @@ describe('промпты разбора', () => {
   it('короткий маршрут просит пометить выводы как предварительные', () => {
     expect(buildPrompt({ task: 'full', tier: 1, answered: 40, total: 45 })).toContain('предварительные');
     expect(buildPrompt({ task: 'full', tier: 3, answered: 150, total: 158 })).toContain('сравни выводы двух методик');
+    // Темы следующего маршрута перечислены явно: в файле их нет, и ассистенту не нужно их угадывать.
+    const card = buildPrompt({ task: 'full', tier: 2, answered: 100, total: 100 });
+    expect(card).toMatch(/темы маршрута «Атлас» стоит пройти[^\n]*\(.*Доведение до результата.*Среда и формат работы.*\)/);
+    expect(card).toContain('на «ты», как в вопросах, не длиннее 3000 слов');
+    expect(card).toContain('возьми десять самых важных');
   });
 });
