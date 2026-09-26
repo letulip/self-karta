@@ -1,0 +1,86 @@
+import { describe, expect, it } from 'vitest';
+import { buildPrompt, TASKS } from '../../src/content/texts.ru';
+import { answeredCount, buildMarkdown, exportFileName } from '../../src/lib/exportMd';
+import { defaultState, type KartaState } from '../../src/lib/model';
+
+function fixture(): KartaState {
+  const s = defaultState(0);
+  s.profile = { name: 'Саша', goal: 'job', goalOther: '', goodResult: 'понять, куда откликаться', tier: 1, onboarded: true };
+  const at = 1;
+  s.answers.C1 = { value: 'Собирал модели из конструктора часами', updatedAt: at };
+  s.answers.C11 = { value: { rows: [{ id: 'a', cells: { item: 'Vue' } }, { id: 'b', cells: { item: 'SQL | Postgres' } }] }, updatedAt: at };
+  s.answers.C12 = { value: { scores: { a: 9, b: 5 } }, updatedAt: at };
+  s.answers.C50 = { value: { rows: [{ id: 'r', cells: { item: 'Код-ревью', mark: '+' } }] }, updatedAt: at };
+  s.answers.C59 = { value: { orders: { importance: ['Свобода', 'Мастерство'] }, custom: [], followUp: 'Ушёл ради свободы' }, updatedAt: at };
+  s.answers.C74 = { value: { entries: [{ id: 'm', who: 'коллега', strengths: 'дотошность', weakness: 'нетерпеливость' }] }, updatedAt: at };
+  s.answers.C92 = { value: { values: { safe: 'Найм', strange: 'Яхта' } }, updatedAt: at };
+  s.answers.G41 = { value: 'Обычно я стратег', updatedAt: at }; // сверх маршрута Эскиз
+  s.bigFive = { resultUrl: 'https://psytests.org/result?v=abc', notes: '', updatedAt: at };
+  return s;
+}
+
+describe('выгрузка в Markdown', () => {
+  const md = buildMarkdown(fixture(), { now: new Date('2026-10-01T10:00:00Z') });
+
+  it('шапка: имя, маршрут, прогресс, цель', () => {
+    expect(md).toContain('# Карта экспертности — Саша');
+    expect(md).toContain('маршрут «Эскиз» · отвечено 7 из 45');
+    expect(md).toContain('**Зачем мне этот тест:** Найти работу');
+    expect(md).toContain('**Хороший результат для меня:** понять, куда откликаться');
+  });
+
+  it('вопросы идут с номером, подсказкой и ответом', () => {
+    expect(md).toContain('#### C1. Какие занятия в детстве и юности');
+    expect(md).toContain('Собирал модели из конструктора часами');
+    expect(md).toMatch(/#### C4\. [^\n]+\n(> [^\n]+\n)+\n— пропущено/);
+  });
+
+  it('структурные ответы — таблицами и списками', () => {
+    expect(md).toContain('| SQL \\| Postgres | 5 |');
+    expect(md).toContain('| Vue | 9 (могу учить других) |');
+    expect(md).toContain('| Код-ревью | + заряжает |');
+    expect(md).toContain('**По важности:** 1. Свобода; 2. Мастерство');
+    expect(md).toContain('> **коллега**');
+    expect(md).toContain('**Безопасный сценарий:** Найм');
+  });
+
+  it('ответы сверх маршрута не теряются, пустые вопросы других уровней не показываются', () => {
+    expect(md).toContain('#### G41.');
+    expect(md).not.toContain('#### G42.');
+    expect(md).not.toContain('#### C2.');
+  });
+
+  it('Big Five — ссылкой в конце', () => {
+    expect(md.trimEnd().endsWith('Результат: https://psytests.org/result?v=abc')).toBe(true);
+  });
+
+  it('можно скрыть вопросы без ответа', () => {
+    const short = buildMarkdown(fixture(), { hideEmpty: true });
+    expect(short).not.toMatch(/\n— пропущено\n/);
+    expect(short).toContain('#### C1.');
+  });
+
+  it('счётчик и имя файла', () => {
+    expect(answeredCount(fixture(), 1)).toBe(7);
+    expect(exportFileName(fixture(), 'md', new Date('2026-10-01'))).toBe('karta-саша-2026-10-01.md');
+    expect(exportFileName(fixture(), 'json', new Date('2026-10-01'))).toBe('karta-backup-2026-10-01.json');
+  });
+});
+
+describe('промпты разбора', () => {
+  it('каждая задача собирается с контекстом и правилами', () => {
+    for (const t of TASKS) {
+      const p = buildPrompt({ task: t.id, tier: 2, answered: 90, total: 100, goal: 'Найти работу' });
+      expect(p).toContain(`Задача — «${t.title}»`);
+      expect(p).toContain('Зачем мне разбор: найти работу.');
+      expect(p).toContain('Маршрут «Карта», отвечено 90 из 100');
+      expect(p).toContain('Не ставь диагнозов');
+      expect(p).not.toMatch(/\n\n\n/);
+    }
+  });
+
+  it('короткий маршрут просит пометить выводы как предварительные', () => {
+    expect(buildPrompt({ task: 'full', tier: 1, answered: 40, total: 45 })).toContain('предварительные');
+    expect(buildPrompt({ task: 'full', tier: 3, answered: 150, total: 158 })).toContain('сравни выводы двух методик');
+  });
+});
