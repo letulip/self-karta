@@ -173,8 +173,25 @@ test('карточка коуча: Telegram, отзывы и готовое со
   await page.goto('./#/export');
   const card = page.getByRole('region', { name: /Разобрать вместе с коучем/ });
   await expect(card.getByRole('link', { name: 'Написать в Telegram' })).toHaveAttribute('href', 'https://t.me/letulip');
-  await expect(card.locator('blockquote')).toHaveCount(2);
+  await expect(card.locator('figure.quote')).toHaveCount(2);
   await card.getByRole('button', { name: 'Скопировать сообщение' }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/Маршрут: «Эскиз»\. Цели: найти работу/);
   await expect(page.getByTestId('prompt')).not.toHaveValue(/letulip/);
+});
+
+test('отзывы: лента скриншотов открывается крупно и листается', async ({ page }) => {
+  await onboard(page);
+  await page.goto('./#/export');
+  const thumbs = page.getByRole('button', { name: /Открыть крупно/ });
+  await expect(thumbs).toHaveCount(8);
+  await thumbs.first().click();
+  const dialog = page.getByRole('dialog', { name: 'Отзыв крупно' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('1 / 8')).toBeVisible();
+  await expect(dialog.locator('img')).toHaveJSProperty('complete', true);
+  expect(await dialog.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+  await dialog.getByRole('button', { name: 'Следующий отзыв' }).click();
+  await expect(dialog.getByText('2 / 8')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
 });

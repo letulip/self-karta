@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { AUTHOR, buildPrompt, COACH, coachMessage, GOALS, NEXT_STEPS, TASKS, TIERS, type TaskId } from '../content/texts.ru';
 import CopyButton from '../components/CopyButton.vue';
 import ProgressBar from '../components/ProgressBar.vue';
+import ReviewStrip from '../components/ReviewStrip.vue';
 import { groupProgress } from '../lib/answers';
 import { downloadBackup } from '../lib/backup';
 import { partsOf, tierQuestions } from '../lib/content';
@@ -137,6 +138,7 @@ const share = () => shareText(md.value, fileName.value, 'text/markdown');
         <blockquote>{{ q.text }}</blockquote>
         <figcaption>— {{ q.who }}</figcaption>
       </figure>
+      <ReviewStrip />
       <p class="muted">{{ COACH.privacy }}</p>
       <div class="row">
         <a class="btn primary" :href="`https://t.me/${AUTHOR.telegram}`" target="_blank" rel="noopener noreferrer">
