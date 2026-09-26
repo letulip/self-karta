@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { ABOUT, APP_TITLE, GOAL_QUESTION, GOALS, PACE, PRIVACY, RULES } from '../content/texts.ru';
+import {
+  ABOUT,
+  APP_TITLE,
+  GOAL_QUESTION,
+  GOALS,
+  MAX_GOALS,
+  PACE,
+  PRIVACY,
+  RULES,
+  TIER_QUESTION,
+} from '../content/texts.ru';
 import type { Tier } from '../content/types';
 import ImportBackup from '../components/ImportBackup.vue';
 import TierPicker from '../components/TierPicker.vue';
@@ -9,20 +19,27 @@ import { setTier, state } from '../lib/store';
 
 const router = useRouter();
 const onboarded = computed(() => state.profile.onboarded);
-const recommended = computed(() => GOALS.find((g) => g.id === state.profile.goal)?.tier);
+const goals = computed(() => state.profile.goals);
+const limitReached = computed(() => goals.value.length >= MAX_GOALS);
 
-const tier = computed({
-  get: () => state.profile.tier,
-  set: (t: Tier) => setTier(t),
+// Советуем самый глубокий маршрут из подходящих под выбранные цели.
+const recommended = computed<Tier | undefined>(() => {
+  const tiers = GOALS.filter((g) => goals.value.includes(g.id)).map((g) => g.tier);
+  return tiers.length ? (Math.max(...tiers) as Tier) : undefined;
 });
 
-function pickGoal(id: (typeof GOALS)[number]['id']) {
-  const wasDefault = !state.profile.goal;
-  state.profile.goal = id;
-  // Маршрут подстраиваем под цель только при первом выборе — дальше решает человек.
-  const g = GOALS.find((x) => x.id === id);
-  if (wasDefault && g && !onboarded.value) setTier(g.tier);
-}
+// Пока человек сам не выбрал маршрут, он следует за целями.
+const tierTouched = ref(onboarded.value);
+const tier = computed({
+  get: () => state.profile.tier,
+  set: (t: Tier) => {
+    tierTouched.value = true;
+    setTier(t);
+  },
+});
+watch(recommended, (t) => {
+  if (t && !tierTouched.value) setTier(t);
+});
 
 function start() {
   state.profile.onboarded = true;
@@ -38,23 +55,30 @@ function start() {
     </header>
 
     <section class="card stack" aria-labelledby="goal-h">
-      <h2 id="goal-h">{{ GOAL_QUESTION.title }}</h2>
-      <p class="muted">{{ GOAL_QUESTION.hint }}</p>
-      <div class="goals" role="radiogroup" aria-labelledby="goal-h">
-        <button
+      <div>
+        <h2 id="goal-h">
+          {{ GOAL_QUESTION.title }} <span class="choose">({{ GOAL_QUESTION.choose }})</span>
+        </h2>
+        <p class="muted">{{ GOAL_QUESTION.hint }}</p>
+      </div>
+      <div class="options" role="group" aria-labelledby="goal-h">
+        <label
           v-for="g in GOALS"
           :key="g.id"
-          type="button"
-          role="radio"
-          class="goal"
-          :class="{ on: state.profile.goal === g.id }"
-          :aria-checked="state.profile.goal === g.id"
-          @click="pickGoal(g.id)"
+          class="option"
+          :class="{ on: goals.includes(g.id), off: limitReached && !goals.includes(g.id) }"
         >
-          {{ g.label }}
-        </button>
+          <input
+            v-model="state.profile.goals"
+            type="checkbox"
+            :value="g.id"
+            :disabled="limitReached && !goals.includes(g.id)"
+          />
+          <span>{{ g.label }}</span>
+        </label>
       </div>
-      <div v-if="state.profile.goal === 'other'">
+      <p v-if="limitReached" class="muted small" role="status">{{ GOAL_QUESTION.limit }}</p>
+      <div v-if="goals.includes('other')">
         <label for="goal-other">Своими словами</label>
         <input id="goal-other" v-model="state.profile.goalOther" type="text" />
       </div>
@@ -65,9 +89,15 @@ function start() {
     </section>
 
     <section class="stack" aria-labelledby="tier-h">
-      <h2 id="tier-h">Насколько глубоко идём?</h2>
+      <h2 id="tier-h">
+        {{ TIER_QUESTION.title }} <span class="choose">({{ TIER_QUESTION.choose }})</span>
+      </h2>
       <p class="pace">{{ PACE }}</p>
-      <TierPicker v-model="tier" :recommended="recommended" />
+      <TierPicker
+        v-model="tier"
+        :recommended="recommended"
+        :recommended-label="goals.length > 1 ? 'подходит под цели' : 'подходит под цель'"
+      />
     </section>
 
     <section class="card stack">
@@ -106,17 +136,29 @@ function start() {
 </template>
 
 <style scoped>
-.goals { display: grid; gap: 8px; }
-.goal {
-  text-align: left;
-  font: inherit;
+.choose { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
+.options { display: grid; gap: 8px; }
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--surface);
-  color: var(--text);
+  font-weight: 400;
   cursor: pointer;
 }
-.goal.on { border: 2px solid var(--accent); background: var(--accent-soft); font-weight: 600; }
-.pace { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0; }
+.option input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.option.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); font-weight: 600; }
+.option.off { opacity: 0.55; cursor: not-allowed; }
+.small { font-size: 0.9rem; margin: 0; }
+.pace {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 10px 10px 0;
+}
 </style>

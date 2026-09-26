@@ -6,7 +6,7 @@ import ProgressBar from '../components/ProgressBar.vue';
 import { groupProgress } from '../lib/answers';
 import { downloadBackup } from '../lib/backup';
 import { partsOf, tierQuestions } from '../lib/content';
-import { answeredCount, buildMarkdown, exportFileName, goalText } from '../lib/exportMd';
+import { answeredCount, buildMarkdown, exportFileName, goalLabels } from '../lib/exportMd';
 import { canShareFiles, downloadText, shareText } from '../lib/share';
 import { state } from '../lib/store';
 
@@ -29,7 +29,12 @@ const hideEmpty = ref(false);
 const md = computed(() => buildMarkdown(state, { hideEmpty: hideEmpty.value }));
 const fileName = computed(() => exportFileName(state, 'md'));
 
-const task = ref<TaskId>(GOALS.find((g) => g.id === state.profile.goal)?.task ?? 'full');
+// Разборы под выбранные цели, в порядке выбора: первый — по умолчанию.
+const goalTasks = computed(() => [
+  ...new Set(state.profile.goals.map((id) => GOALS.find((g) => g.id === id)?.task).filter((t): t is TaskId => !!t)),
+]);
+const task = ref<TaskId>(goalTasks.value[0] ?? 'full');
+const taskTitle = (id: TaskId) => TASKS.find((t) => t.id === id)?.title ?? id;
 const taskInfo = computed(() => TASKS.find((t) => t.id === task.value) ?? TASKS[0]!);
 const prompt = computed(() =>
   buildPrompt({
@@ -37,7 +42,7 @@ const prompt = computed(() =>
     tier: tier.value,
     answered: answered.value,
     total: total.value,
-    goal: goalText(state) || undefined,
+    goals: goalLabels(state),
     goodResult: state.profile.goodResult.trim() || undefined,
   }),
 );
@@ -90,7 +95,23 @@ const share = () => shareText(md.value, fileName.value, 'text/markdown');
         <select id="task" v-model="task" data-testid="task-select">
           <option v-for="t in TASKS" :key="t.id" :value="t.id">{{ t.title }}</option>
         </select>
-        <p class="muted small">{{ taskInfo.gives }}. Промпт уже учитывает твою цель и маршрут.</p>
+        <p class="muted small">{{ taskInfo.gives }}. Промпт уже учитывает твои цели и маршрут.</p>
+      </div>
+      <div v-if="goalTasks.length > 1" class="card soft">
+        <p class="small">Под твои цели подходят несколько разборов — их можно запустить по очереди на одном и том же файле:</p>
+        <div class="row">
+          <button
+            v-for="t in goalTasks"
+            :key="t"
+            type="button"
+            class="btn small"
+            :class="{ primary: task === t }"
+            :aria-pressed="task === t"
+            @click="task = t"
+          >
+            {{ taskTitle(t) }}
+          </button>
+        </div>
       </div>
       <textarea :value="prompt" readonly rows="14" aria-label="Текст промпта" data-testid="prompt" />
       <div class="row">

@@ -1,5 +1,8 @@
 // Чтение, запись, проверка и слияние состояния. Без Vue — чтобы тестировать отдельно.
+import { GOALS, MAX_GOALS, type GoalId } from '../content/texts.ru';
 import { defaultState, SCHEMA, type AnswerRecord, type KartaState } from './model';
+
+const GOAL_IDS = new Set<string>(GOALS.map((g) => g.id));
 
 export const STORAGE_KEY = 'self-karta:v1';
 
@@ -52,6 +55,10 @@ export function normalizeState(raw: unknown): KartaState | null {
       ...(rec.flagged === true ? { flagged: true } : {}),
     };
   }
+  // Первая версия хранила одну цель в profile.goal — переносим её в список.
+  const rawGoals: unknown[] = Array.isArray(p.goals) ? p.goals : typeof p.goal === 'string' ? [p.goal] : [];
+  const valid = rawGoals.filter((g): g is GoalId => typeof g === 'string' && GOAL_IDS.has(g));
+  const goals = [...new Set(valid)].slice(0, MAX_GOALS);
   const bf = isObj(raw.bigFive) ? raw.bigFive : {};
   const pos = isObj(raw.position) ? raw.position : null;
   return {
@@ -60,7 +67,7 @@ export function normalizeState(raw: unknown): KartaState | null {
     updatedAt: num(raw.updatedAt, base.createdAt),
     profile: {
       name: str(p.name),
-      goal: typeof p.goal === 'string' ? (p.goal as KartaState['profile']['goal']) : null,
+      goals,
       goalOther: str(p.goalOther),
       goodResult: str(p.goodResult),
       tier,

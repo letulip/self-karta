@@ -6,8 +6,8 @@ const ANSWER = 'Часами собирал модели из конструкт
 
 async function onboard(page: Page, goal = 'Найти работу', tier = 'Эскиз') {
   await page.goto('./');
-  await page.getByRole('radio', { name: new RegExp(goal) }).click();
-  await page.getByRole('radio', { name: new RegExp(tier) }).click();
+  await page.getByRole('checkbox', { name: new RegExp(goal) }).check();
+  await page.getByRole('radio', { name: new RegExp(tier) }).check();
   await page.getByTestId('start').click();
   await expect(page).toHaveURL(/#\/map$/);
 }
@@ -144,4 +144,25 @@ test('«Оставить разбору» помечает вопрос, и по
   await expect(page.getByTestId('prompt')).toHaveValue(/«Оставляю для разбора:»/);
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download-md').click()]);
   expect(await readFile((await download.path())!, 'utf8')).toContain('Оставляю для разбора: не понимаю');
+});
+
+test('цели: до трёх, маршрут следует за ними, выгрузка предлагает разбор под каждую', async ({ page }) => {
+  await page.goto('./');
+  const goal = (name: string) => page.getByRole('checkbox', { name: new RegExp(name) });
+  await goal('Просто интересно').check();
+  await expect(page.getByRole('radio', { name: /Эскиз/ })).toBeChecked();
+  await goal('Найти работу').check();
+  await expect(page.getByRole('radio', { name: /Карта/ })).toBeChecked();
+  await goal('Понять себя').check();
+  await expect(goal('Выбрать новое направление')).toBeDisabled();
+  await expect(page.getByText('Выбрано три')).toBeVisible();
+  await goal('Понять себя').uncheck();
+  await expect(goal('Выбрать новое направление')).toBeEnabled();
+
+  await page.getByTestId('start').click();
+  await page.goto('./#/export');
+  await expect(page.getByTestId('task-select')).toHaveValue('onepager');
+  await page.getByRole('button', { name: 'Поиск работы' }).click();
+  await expect(page.getByTestId('task-select')).toHaveValue('job');
+  await expect(page.getByTestId('prompt')).toHaveValue(/Зачем мне разбор: просто интересно; найти работу/);
 });

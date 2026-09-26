@@ -16,7 +16,7 @@ export interface AnswerRecord { value: AnswerValue; updatedAt: number; flagged?:
 
 export interface Profile {
   name: string;
-  goal: GoalId | null;
+  goals: GoalId[]; // в порядке выбора: первая задаёт разбор по умолчанию
   goalOther: string;
   goodResult: string;
   tier: Tier;
@@ -41,7 +41,7 @@ export function defaultState(now = Date.now()): KartaState {
     schema: SCHEMA,
     createdAt: now,
     updatedAt: now,
-    profile: { name: '', goal: null, goalOther: '', goodResult: '', tier: 2, onboarded: false },
+    profile: { name: '', goals: [], goalOther: '', goodResult: '', tier: 2, onboarded: false },
     answers: {},
     bigFive: { resultUrl: '', notes: '', updatedAt: 0 },
     lastBackupAt: null,

@@ -16,11 +16,14 @@ import {
 const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>').trim() || ' ';
 const TRI: Record<string, string> = { '+': '+ заряжает', '0': '0 нейтрально', '-': '− истощает' };
 
-export function goalText(state: KartaState): string {
+export function goalLabels(state: KartaState): string[] {
   const p = state.profile;
-  if (p.goal === 'other') return p.goalOther.trim() || 'другое';
-  return GOALS.find((g) => g.id === p.goal)?.label ?? '';
+  return p.goals
+    .map((id) => (id === 'other' ? p.goalOther.trim() || 'другое' : (GOALS.find((g) => g.id === id)?.label ?? '')))
+    .filter(Boolean);
 }
+
+export const goalText = (state: KartaState) => goalLabels(state).join('; ');
 
 export function answeredCount(state: KartaState, tier: Tier): number {
   return tierQuestions(tier).filter((q) => isAnswered(q, state.answers[q.id])).length;

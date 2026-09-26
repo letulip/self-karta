@@ -80,15 +80,21 @@ describe('хранилище', () => {
 
   it('бэкап проходит путь туда и обратно', () => {
     const s = withAnswer('G23', 'ранжирование', 7);
-    s.profile.goal = 'job';
+    s.profile.goals = ['job', 'pivot'];
     const back = parseBackup(serializeBackup(s));
     expect(back.answers.G23?.value).toBe('ранжирование');
-    expect(back.profile.goal).toBe('job');
+    expect(back.profile.goals).toEqual(['job', 'pivot']);
   });
 
   it('чужой файл даёт понятную ошибку', () => {
     expect(() => parseBackup('не json')).toThrow('не получилось прочитать JSON');
     expect(() => parseBackup('{"hello": 1}')).toThrow('нет ответов');
+  });
+
+  it('одна цель из первой версии переносится в список, мусор и лишнее отбрасываются', () => {
+    expect(normalizeState({ answers: {}, profile: { goal: 'energy' } })?.profile.goals).toEqual(['energy']);
+    const many = normalizeState({ answers: {}, profile: { goals: ['self', 'nope', 'self', 'job', 'pivot', 'business'] } });
+    expect(many?.profile.goals).toEqual(['self', 'job', 'pivot']);
   });
 
   it('мусорные ключи ответов отбрасываются', () => {

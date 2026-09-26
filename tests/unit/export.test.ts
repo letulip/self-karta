@@ -5,7 +5,7 @@ import { defaultState, type KartaState } from '../../src/lib/model';
 
 function fixture(): KartaState {
   const s = defaultState(0);
-  s.profile = { name: 'Саша', goal: 'job', goalOther: '', goodResult: 'понять, куда откликаться', tier: 1, onboarded: true };
+  s.profile = { name: 'Саша', goals: ['job', 'self'], goalOther: '', goodResult: 'понять, куда откликаться', tier: 1, onboarded: true };
   const at = 1;
   s.answers.C1 = { value: 'Собирал модели из конструктора часами', updatedAt: at };
   s.answers.C11 = { value: { rows: [{ id: 'a', cells: { item: 'Vue' } }, { id: 'b', cells: { item: 'SQL | Postgres' } }] }, updatedAt: at };
@@ -25,7 +25,7 @@ describe('выгрузка в Markdown', () => {
   it('шапка: имя, маршрут, прогресс, цель', () => {
     expect(md).toContain('# Карта экспертности — Саша');
     expect(md).toContain('маршрут «Эскиз» · отвечено 7 из 45');
-    expect(md).toContain('**Зачем мне этот тест:** Найти работу');
+    expect(md).toContain('**Зачем мне этот тест:** Найти работу: позиционирование, резюме, собеседования; Понять себя');
     expect(md).toContain('**Хороший результат для меня:** понять, куда откликаться');
   });
 
@@ -70,9 +70,9 @@ describe('выгрузка в Markdown', () => {
 describe('промпты разбора', () => {
   it('каждая задача собирается с контекстом и правилами', () => {
     for (const t of TASKS) {
-      const p = buildPrompt({ task: t.id, tier: 2, answered: 90, total: 100, goal: 'Найти работу' });
+      const p = buildPrompt({ task: t.id, tier: 2, answered: 90, total: 100, goals: ['Найти работу', 'Понять себя'] });
       expect(p).toContain(`Задача — «${t.title}»`);
-      expect(p).toContain('Зачем мне разбор: найти работу.');
+      expect(p).toContain('Зачем мне разбор: найти работу; понять себя.');
       expect(p).toContain('Маршрут «Карта», отвечено 90 из 100');
       expect(p).toContain('Не ставь диагнозов');
       expect(p).toContain('«Оставляю для разбора:»');
