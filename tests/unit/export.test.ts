@@ -101,7 +101,29 @@ describe('промпты разбора', () => {
     // Темы следующего маршрута перечислены явно: в файле их нет, и ассистенту не нужно их угадывать.
     const card = buildPrompt({ task: 'full', tier: 2, answered: 100, total: 100 });
     expect(card).toMatch(/темы маршрута «Атлас» стоит пройти[^\n]*\(.*Доведение до результата.*Среда и формат работы.*\)/);
-    expect(card).toContain('на «ты», как в вопросах, не длиннее 3000 слов');
+    expect(card).toContain('на «ты», как в вопросах');
     expect(card).toContain('возьми десять самых важных');
+  });
+
+  it('большие разборы идут частями, короткий — одним сообщением', () => {
+    // Длинный ответ в чате обрывается: вместо жёсткого лимита — части с продолжением по слову «дальше».
+    const full = buildPrompt({ task: 'full', tier: 2, answered: 100, total: 100 });
+    expect(full).not.toContain('3000 слов');
+    expect(full).toContain('присылай разбор частями: до 4 частей');
+    expect(full).toContain('Первая часть должна быть полезна сама по себе');
+    expect(full).toContain('Напиши „дальше“');
+    // Агент в рабочей папке пишет разбор файлом целиком.
+    expect(full).toContain('запиши весь разбор в один файл');
+    expect(buildPrompt({ task: 'job', tier: 2, answered: 100, total: 100 })).toContain('до 3 частей');
+    const one = buildPrompt({ task: 'onepager', tier: 1, answered: 45, total: 45 });
+    expect(one).not.toContain('частями');
+    expect(one).toContain('Уложись в одну страницу');
+    for (const task of TASKS) expect(task.parts).toBeGreaterThanOrEqual(1);
+  });
+
+  it('несостыковки в цифрах — вопрос, а не вывод; неполный файл — сказать сразу', () => {
+    const p = buildPrompt({ task: 'job', tier: 2, answered: 100, total: 100 });
+    expect(p).toContain('часто это разные периоды; просто уточни');
+    expect(p).toContain('доступен только поиском по фрагментам');
   });
 });
