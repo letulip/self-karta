@@ -131,3 +131,17 @@ test('доступность: без серьёзных нарушений', asy
     expect(violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${route}: ${v.id}`)).toEqual([]);
   }
 });
+
+test('«Оставить разбору» помечает вопрос, и пометка попадает в выгрузку', async ({ page }) => {
+  await onboard(page);
+  await page.getByTestId('continue').click();
+  await page.getByRole('button', { name: 'Оставить разбору' }).click();
+  await expect(page.getByLabel('Ответ')).toBeFocused();
+  await page.keyboard.type('не понимаю, что считать увлечением');
+  await expect(page.getByLabel('Ответ')).toHaveValue('Оставляю для разбора: не понимаю, что считать увлечением');
+  await expect(page.getByRole('button', { name: 'Оставить разбору' })).toHaveCount(0);
+  await page.goto('./#/export');
+  await expect(page.getByTestId('prompt')).toHaveValue(/«Оставляю для разбора:»/);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download-md').click()]);
+  expect(await readFile((await download.path())!, 'utf8')).toContain('Оставляю для разбора: не понимаю');
+});

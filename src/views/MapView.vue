@@ -88,7 +88,7 @@ function confirmReset() {
       <div>
         <div class="row spread">
           <span>Отвечено {{ answered }} из {{ total }}</span>
-          <span class="muted">{{ hours(tierMinutes(tier)) }} на весь маршрут</span>
+          <span class="muted">{{ hours(tierMinutes(tier)) }} в сумме, частями</span>
         </div>
         <ProgressBar :value="answered" :max="total" label="Прогресс маршрута" />
       </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ABOUT, APP_TITLE, GOAL_QUESTION, GOALS, PRIVACY, RULES } from '../content/texts.ru';
+import { ABOUT, APP_TITLE, GOAL_QUESTION, GOALS, PACE, PRIVACY, RULES } from '../content/texts.ru';
 import type { Tier } from '../content/types';
 import ImportBackup from '../components/ImportBackup.vue';
 import TierPicker from '../components/TierPicker.vue';
@@ -66,6 +66,7 @@ function start() {
 
     <section class="stack" aria-labelledby="tier-h">
       <h2 id="tier-h">Насколько глубоко идём?</h2>
+      <p class="pace">{{ PACE }}</p>
       <TierPicker v-model="tier" :recommended="recommended" />
     </section>
 
@@ -117,4 +118,5 @@ function start() {
   cursor: pointer;
 }
 .goal.on { border: 2px solid var(--accent); background: var(--accent-soft); font-weight: 600; }
+.pace { margin: 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0; }
 </style>

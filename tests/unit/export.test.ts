@@ -75,6 +75,7 @@ describe('промпты разбора', () => {
       expect(p).toContain('Зачем мне разбор: найти работу.');
       expect(p).toContain('Маршрут «Карта», отвечено 90 из 100');
       expect(p).toContain('Не ставь диагнозов');
+      expect(p).toContain('«Оставляю для разбора:»');
       expect(p).not.toMatch(/\n\n\n/);
     }
   });
