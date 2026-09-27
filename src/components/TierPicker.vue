@@ -2,14 +2,18 @@
 import { TIERS } from '../content/texts.ru';
 import type { Tier } from '../content/types';
 import { tierMinutes, tierQuestions } from '../lib/content';
-import { hours, plural } from '../lib/format';
+import { hours, plural, sessionRange } from '../lib/format';
 
 const model = defineModel<Tier>({ required: true });
 defineProps<{ recommended?: Tier; recommendedLabel?: string }>();
 
 const tiers: Tier[] = [1, 2, 3];
 const count = (t: Tier) => tierQuestions(t).length;
-const sessions = (t: Tier) => Math.max(1, Math.round(tierMinutes(t) / 30));
+const sessions = (t: Tier) => sessionRange(tierMinutes(t));
+const sessionsLabel = (t: Tier) => {
+  const [min, max] = sessions(t);
+  return min === max ? `${max}` : `${min}–${max}`;
+};
 </script>
 
 <template>
@@ -22,7 +26,7 @@ const sessions = (t: Tier) => Math.max(1, Math.round(tierMinutes(t) / 30));
       </span>
       <span class="muted">
         {{ count(t) }} {{ plural(count(t), 'вопрос', 'вопроса', 'вопросов') }} · {{ hours(tierMinutes(t)) }} в сумме —
-        это {{ sessions(t) }} {{ plural(sessions(t), 'сессия', 'сессии', 'сессий') }} по полчаса
+        это {{ sessionsLabel(t) }} {{ plural(sessions(t)[1], 'подход', 'подхода', 'подходов') }} по 30–40 минут
       </span>
       <span class="outcome">{{ TIERS[t].outcome }}</span>
     </label>

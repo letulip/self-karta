@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { groups, parts, questions } from '../../src/content/questions.ru';
 import { GOALS, TASKS } from '../../src/content/texts.ru';
-import { groupsOf, questionById, tierQuestions } from '../../src/lib/content';
+import { groupMinutes, groupsOf, questionById, tierMinutes, tierQuestions } from '../../src/lib/content';
+import { hours, sessionRange } from '../../src/lib/format';
 
 const ids = (tier: 1 | 2 | 3) => new Set(tierQuestions(tier).map((q) => q.id));
 
@@ -61,5 +62,16 @@ describe('банк вопросов', () => {
   it('каждая цель ведёт на существующую задачу разбора', () => {
     const tasks = new Set(TASKS.map((t) => t.id));
     for (const g of GOALS) expect(tasks.has(g.task), g.id).toBe(true);
+  });
+
+  it('время по реальному темпу: ~2, ~4 и ~6 ч — 3–4, 6–8 и 9–12 подходов по 30–40 минут', () => {
+    const tiers = [1, 2, 3] as const;
+    expect(tiers.map((t) => hours(tierMinutes(t)))).toEqual(['~2 ч', '~4 ч', '~6 ч']);
+    expect(tiers.map((t) => sessionRange(tierMinutes(t)))).toEqual([[3, 4], [6, 8], [9, 12]]);
+    // Время групп на карте складывается в ту же сумму, что показана у маршрута.
+    for (const t of tiers) {
+      const sum = groupsOf(t).reduce((s, g) => s + groupMinutes(g, t), 0);
+      expect(hours(sum), `маршрут ${t}`).toBe(hours(tierMinutes(t)));
+    }
   });
 });

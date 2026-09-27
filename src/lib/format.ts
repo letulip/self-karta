@@ -6,10 +6,20 @@ export function plural(n: number, one: string, few: string, many: string): strin
   return many;
 }
 
+// Часы с точностью до получаса — так их и показываем.
+export function roundHours(minutes: number): number {
+  return Math.round((minutes / 60) * 2) / 2;
+}
+
 export function hours(minutes: number): string {
   if (minutes < 60) return `~${minutes} мин`;
-  const h = Math.round((minutes / 60) * 2) / 2;
-  return `~${String(h).replace('.', ',')} ч`;
+  return `~${String(roundHours(minutes)).replace('.', ',')} ч`;
+}
+
+// Подход — 30–40 минут. Считаем от показанных часов, чтобы цифры рядом сходились: 2 ч — 3–4 подхода.
+export function sessionRange(minutes: number): [number, number] {
+  const shown = roundHours(minutes) * 60;
+  return [Math.max(1, Math.round(shown / 40)), Math.max(1, Math.round(shown / 30))];
 }
 
 export function daysSince(ts: number | null, now = Date.now()): number {
