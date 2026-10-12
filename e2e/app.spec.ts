@@ -195,3 +195,24 @@ test('отзывы: лента скриншотов открывается кр�
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
 });
+
+test('длинный ответ: курсор не уезжает под панель «Далее» и клавиатуру', async ({ page }) => {
+  // Невысокий экран — как телефон, у которого половину занимает клавиатура.
+  await page.setViewportSize({ width: 412, height: 480 });
+  await onboard(page);
+  await page.getByTestId('continue').click();
+  const field = page.getByLabel('Ответ');
+  await field.click();
+  await page.keyboard.type(`${ANSWER}. `.repeat(6));
+  const { caret, bar } = await field.evaluate((ta: HTMLTextAreaElement) => ({
+    caret: ta.getBoundingClientRect().bottom - parseFloat(getComputedStyle(ta).paddingBottom),
+    bar: document.querySelector('.bottombar')!.getBoundingClientRect().top,
+  }));
+  expect(caret).toBeLessThanOrEqual(bar);
+
+  // Правка в начале длинного текста: страница остаётся на месте и не прыгает к его концу.
+  await field.click({ position: { x: 60, y: 30 } });
+  const before = await page.evaluate(() => window.scrollY);
+  await page.keyboard.type(' вставка');
+  expect(Math.abs((await page.evaluate(() => window.scrollY)) - before)).toBeLessThan(30);
+});
